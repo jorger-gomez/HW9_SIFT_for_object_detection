@@ -8,6 +8,9 @@
     Contact: jorger.gomez@udem.edu & juan.chavezv@udem.edu
     Organization: Universidad de Monterrey
     First created on Friday 26 April 2024
+
+    Usage Example: 
+        py .\sift_img_features_extraction_and_matching.py -obj .\imgs\game_box.jpg -img .\imgs\scene_5.jpg
 """
 # Import std libraries
 import argparse
