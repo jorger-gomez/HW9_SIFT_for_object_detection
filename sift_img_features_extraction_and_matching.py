@@ -87,7 +87,7 @@ def match_features(descriptors_1: np.ndarray, descriptors_2: np.ndarray) -> tupl
     # Apply Lowe's ratio test
     matches_mask = [[0, 0] for i in range(len(matches))]
     for i, (m, n) in enumerate(matches):
-        if m.distance < 0.7 * n.distance:
+        if m.distance < 0.57 * n.distance:
             matches_mask[i] = [1, 0]
     return matches, matches_mask
 
@@ -121,6 +121,50 @@ def draw_matches(img_1: np.ndarray, img_2: np.ndarray, matches: np.ndarray, mask
     draw_params = dict(matchColor=(0, 255, 0), singlePointColor=(255, 0, 0), matchesMask=mask, flags=cv2.DrawMatchesFlags_DEFAULT)
     img = cv2.drawMatchesKnn(img_1["image"], img_1["features"]["kp"], img_2["image"], img_2["features"]["kp"], matches, None, **draw_params)
     return img
+
+def find_matches_location(matches: list, kp2: list, mask: list) -> np.ndarray:
+    """
+    Find the minimum rotated rectangle around the matched keypoints in the second image.
+
+    Args:
+        matches (list): Matched keypoints indices.
+        kp2 (list): Keypoints from the second image.
+        mask (list): Mask for good matches.
+    Returns:
+        cv2.RotatedRect: A rotated rectangle that encloses the matched keypoints.
+    """
+    # Filter matches with the mask
+    good_points = [kp2[matches[i][0].trainIdx].pt for i in range(len(matches)) if mask[i][0]]
+
+    # Ensure there are enough points to calculate a rectangle
+    if len(good_points) < 20:
+        return None
+
+    # Convert points to a numpy array
+    points = np.array(good_points, dtype=np.float32)
+
+    # Calculate the rotated rectangle
+    rect = cv2.minAreaRect(points)
+
+    return rect
+
+def draw_rotated_rectangle(img: np.ndarray, rect: np.ndarray) -> np.ndarray:
+    """
+    Draw a rotated rectangle on the image.
+
+    Args:
+        img (np.ndarray): Image on which to draw.
+        rect (cv2.RotatedRect): The rotated rectangle.
+
+    Returns:
+        np.ndarray: Image with the rectangle drawn.
+    """
+    # Get box points and draw
+    box = cv2.boxPoints(rect)
+    box = np.intp(box)
+    color = (255, 255, 0) # Cyan in BGR
+    thickness = 5
+    return cv2.drawContours(img, [box], 0, color, thickness)
 
 def resize_image(img: np.ndarray) -> np.ndarray:
     """
@@ -208,8 +252,20 @@ def run_pipeline():
     # Display image with matches
     visualise_image(img_with_matches, "Matches Found")
 
+    # Find the rotated rectangle location based on matches
+    print(f"\nFinding object location in scene image...")
+    rotated_rect = find_matches_location(matches, img_1["features"]["kp"], matches_mask)
+
+    if rotated_rect:
+        # Draw rotated rectangle
+        print(f"\nDrawing detection area...")
+        img_with_rotated_rect = draw_rotated_rectangle(img_1["image"].copy(), rotated_rect)
+        visualise_image(img_with_rotated_rect, "Object detected within this region")
+    else:
+        print(f"\nNot enough matches found to stablish a detection region!")
+
     # Close Windows
-    print(f"\nShutting down...")
+    print(f"\nShutting down...\n")
     close_windows()
 
 if __name__ == "__main__":
