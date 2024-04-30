@@ -9,15 +9,14 @@
     Organization: Universidad de Monterrey
     First created on Friday 26 April 2024
 
-    Usage Example: 
-        py .\sift_img_features_extraction_and_matching.py -obj .\imgs\game_box.jpg -img .\imgs\scene_5.jpg
+    Usage Example:
+        py .\sift_img_features_extraction_and_matching.py -obj .\imgs\game_box.jpg -img .\imgs\scene_1.jpg
 """
 # Import std libraries
 import argparse
-import copy
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 def parse_user_data() -> tuple[str, str]:
     """
@@ -154,6 +153,14 @@ def visualise_image(img: np.ndarray, title: str) -> None:
     cv2.imshow(title, resized)
     cv2.waitKey(0)
 
+def close_windows():
+    """
+    Close & destroy OpenCV windows
+
+    The Function closes and destroy all cv2 windows that are open.
+    """
+    cv2.destroyAllWindows()
+
 def run_pipeline():
     """
     Execute the entire SIFT feature extraction and matching pipeline.
@@ -162,6 +169,7 @@ def run_pipeline():
         None
     """
     # Create dictionaries to contain image data
+    print(f"\nStarting program...")
     obj  =  {"image": "", 
             "features": {"kp": "", "descriptors": ""}}
     img_1 = {"image": "", 
@@ -171,29 +179,38 @@ def run_pipeline():
     user_input = parse_user_data()
     
     # Load images
+    print(f"\nLoading images...")
     obj["image"] = cv2.imread(user_input.object_image)
     img_1["image"] = cv2.imread(user_input.scene_image)
 
     # Extract img features
+    print(f"\nExtracting features...")
     obj["features"]["kp"], obj["features"]["descriptors"] = extract_features(obj["image"])
     img_1["features"]["kp"], img_1["features"]["descriptors"] = extract_features(img_1["image"])
 
     # Draw Keypoints
+    print(f"\nDrawing keypoints...")
     obj_img_with_kp = draw_keypoints(obj)
     img_1_with_kp = draw_keypoints(img_1)
-
-    # Match features
-    matches, matches_mask = match_features(obj["features"]["descriptors"], img_1["features"]["descriptors"])
-
-    # Draw matches
-    img_with_matches = draw_matches(obj, img_1, matches, matches_mask)
-
+    
     # Display images with keypoints
     visualise_image(obj_img_with_kp, "Object's Keypoints")
     visualise_image(img_1_with_kp, "Scene's Keypoints")
 
+    # Match features
+    print(f"\nMatching features...")
+    matches, matches_mask = match_features(obj["features"]["descriptors"], img_1["features"]["descriptors"])
+
+    # Draw matches
+    print(f"\nDrawing matches...")
+    img_with_matches = draw_matches(obj, img_1, matches, matches_mask)
+
     # Display image with matches
     visualise_image(img_with_matches, "Matches Found")
+
+    # Close Windows
+    print(f"\nShutting down...")
+    close_windows()
 
 if __name__ == "__main__":
     run_pipeline()
